@@ -28,26 +28,29 @@ Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Admin)" -ForegroundColor Green
 Write-Host ""
 
-# 3. Fetch with Progress Bar
+# 3. Fetch, Clean, and Execute
 try {
     Write-Host "Connecting to Global Backend... " -NoNewline -ForegroundColor Gray
     Start-Sleep -Seconds 1
     Write-Host "Connected!" -ForegroundColor Green
     Write-Host ""
 
-    # Simulated Download Bar for the Script
-    for ($i = 1; $i -le 100; $i += 5) {
+    # Downloading Progress Bar
+    for ($i = 1; $i -le 100; $i += 10) {
         Write-Progress -Activity "Downloading Lim Tech Labs Engine" -Status "$i% Complete" -PercentComplete $i
         Start-Sleep -Milliseconds 50
     }
 
-    $MAS_CODE = Invoke-RestMethod -Uri "https://get.activated.win"
+    # Fetching the Raw Code
+    $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # Complete the Progress Bar
+    # REMOVE THE LINK: This replaces the massgrave homepage text with empty space
+    $MAS_CLEAN = $MAS_RAW -replace 'Need help\? Check our homepage: https://massgrave.dev', ''
+    
     Write-Progress -Activity "Downloading Lim Tech Labs Engine" -Completed
     
-    # Execute Massgrave
-    Invoke-Expression $MAS_CODE
+    # Execute the cleaned version
+    Invoke-Expression $MAS_CLEAN
 } 
 catch {
     Write-Host "Error: Connection to backend failed." -ForegroundColor Red
@@ -55,7 +58,7 @@ catch {
     Pause
 }
 
-# 4. Final Countdown
+# 4. Final Thank You & Countdown
 Clear-Host
 Write-Host $Header -ForegroundColor Cyan
 Write-Host ""
@@ -64,11 +67,16 @@ Write-Host ""
 
 $Seconds = 30
 while ($Seconds -gt 0) {
+    # Progress bar for the 30-second exit timer
+    $Percent = [int](($Seconds / 30) * 100)
+    Write-Progress -Activity "System Closing" -Status "Closing in $Seconds seconds..." -PercentComplete $Percent
+    
     Write-Host "`rThis application will automatically close after $Seconds seconds... " -NoNewline -ForegroundColor Gray
     Start-Sleep -Seconds 1
     $Seconds--
 }
 
+Write-Progress -Activity "System Closing" -Completed
 Write-Host "`rClosing now. Goodbye!                             " -ForegroundColor White
 Start-Sleep -Seconds 1
 exit
