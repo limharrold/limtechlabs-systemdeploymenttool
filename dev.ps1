@@ -31,8 +31,8 @@ try {
     # Fetch the code
     $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # SAVE TO USER TEMP (Less likely to be blocked than SystemRoot)
-    $FilePath = "$env:LOCALAPPDATA\Temp\LimTech_Engine.cmd"
+    # FIX: Save to Public folder to completely avoid spaces in the path
+    $FilePath = "$env:PUBLIC\LimTech_Engine.cmd"
     Set-Content -Path $FilePath -Value $MAS
     
     # Inject variables to bypass MAS self-elevation and window management
@@ -40,8 +40,8 @@ try {
     $env:params = "-el"
     $env:_args = "-el"
 
-    # RUN COMMAND: Start it directly using the CMD interpreter
-    & $env:ComSpec /c "`"$FilePath`" -el"
+    # FIX: Use Start-Process with -NoNewWindow to safely parse paths and lock the UI
+    Start-Process -FilePath "$env:ComSpec" -ArgumentList "/c `"`"$FilePath`" -el`"" -NoNewWindow -Wait
 
     # Cleanup after you close the menu
     if (Test-Path $FilePath) { Remove-Item $FilePath -Force }
