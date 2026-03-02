@@ -1,18 +1,23 @@
 # ============================================================
 #  LIM TECH LABS - System Deployment & License Utility
 #  Host: activate.limtechlabs.top
+#  Architecture: Harrold Gawad Lim
 # ============================================================
 
-# 1. FIX: TLS/SSL Support for Older Windows
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-# 2. Force Admin Privileges
+# 1. CACHE BUSTER & ELEVATION
+# This generates a unique ID based on the current time to force a fresh download
+$CacheBuster = Get-Date -Format "yyyyMMddHHmmss"
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Elevating to Administrator..." -ForegroundColor Yellow
-    $args = "-NoProfile -ExecutionPolicy Bypass -Command `"irm activate.limtechlabs.top | iex`""
+    Write-Host " [ INFO ] Fresh update detected. Syncing latest version..." -ForegroundColor Yellow
+    
+    # We append the unique ID to your domain to bypass Cloudflare/ISP caching
+    $args = "-NoProfile -ExecutionPolicy Bypass -Command `"iex (irm 'https://activate.limtechlabs.top?v=$CacheBuster')`""
     Start-Process powershell.exe -ArgumentList $args -Verb RunAs
     exit
 }
+
+# 2. FIX: TLS/SSL Support for Older Windows
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # 3. Setup Interface
 $Host.UI.RawUI.WindowTitle = "Lim Tech Labs - Deployment Tool"
@@ -60,7 +65,6 @@ try {
     }
 
     # --- THE DEEP CLEAN ---
-    # Removes massgrave mentions from the engine to maintain your professional UI
     $MAS_CLEAN = $MAS_RAW -replace '(?m)^.*massgrave.*$', '' -replace '(?m)^.*homepage.*$', '' -replace '(?m)^.*Need help.*$', ''
     
     Write-Progress -Activity "Lim Tech Labs: Syncing with Global Engine" -Completed
@@ -74,7 +78,7 @@ catch {
     Pause
 }
 
-# 5. Final Thank You & Fast Countdown
+# 5. Final Thank You & 5-Second Countdown
 Clear-Host
 Write-Host $Header -ForegroundColor Cyan
 Write-Host ""
@@ -84,7 +88,6 @@ Write-Host ""
 
 $Seconds = 5
 while ($Seconds -gt 0) {
-    # Progress bar for the 5-second exit timer
     $Percent = [int](($Seconds / 5) * 100)
     Write-Progress -Activity "Lim Tech Labs: System Shutdown" -Status "Closing in $Seconds seconds..." -PercentComplete $Percent
     
