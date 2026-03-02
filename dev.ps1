@@ -26,17 +26,16 @@ Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
 Write-Host "Initializing Backend... Please wait.`n" -ForegroundColor Gray
 
 try {
-    # 3. Download the MAS code
-    $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
+    # 3. Download the RAW MAS code (Bypasses the HTML/PowerShell wrapper)
+    $RawUrl = "https://raw.githubusercontent.com/massgravel/Microsoft-Activation-Scripts/master/MAS/All-In-One-Version/MAS_AIO.cmd"
+    $MAS = Invoke-RestMethod -Uri $RawUrl
     
-    # 4. Save to Public folder (Zero spaces, avoids Defender blocking)
+    # 4. Save to Public folder
     $FilePath = "$env:PUBLIC\LimTech_Engine.cmd"
     [System.IO.File]::WriteAllText($FilePath, $MAS)
     
-    # 5. THE ULTIMATE FIX: 
-    # -el bypasses the backend's self-elevation check.
-    # -qedit forces the backend to stay inside our PowerShell window instead of killing it.
-    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$FilePath`" -el -qedit" -NoNewWindow -Wait
+    # 5. Execute natively and lock the window
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"`"$FilePath`" -el -qedit`"" -NoNewWindow -Wait
     
     # 6. Cleanup
     Remove-Item -Path $FilePath -Force -ErrorAction SilentlyContinue
