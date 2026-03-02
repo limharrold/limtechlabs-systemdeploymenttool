@@ -29,25 +29,16 @@ try {
     # 3. Download the MAS code
     $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # 4. Save to Public folder (Zero spaces, zero system folder blocks)
+    # 4. Save to Public folder (Zero spaces, avoids Defender blocking)
     $FilePath = "$env:PUBLIC\LimTech_Engine.cmd"
     [System.IO.File]::WriteAllText($FilePath, $MAS)
     
-    # 5. FIX: Change working directory. 
-    # System32 blocks temporary files. We move to the Public folder first.
-    Set-Location -Path $env:PUBLIC
-
-    # 6. Inject Bypass Variables so MAS stays in this window
-    $env:mas_window_setup = "1"
-    $env:params = "-el"
+    # 5. THE ULTIMATE FIX: 
+    # -el bypasses the backend's self-elevation check.
+    # -qedit forces the backend to stay inside our PowerShell window instead of killing it.
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$FilePath`" -el -qedit" -NoNewWindow -Wait
     
-    # 7. FIX: Execute natively. 
-    # By just calling the file directly with '&', PowerShell perfectly translates 
-    # the path to CMD without breaking the quotes.
-    & $FilePath -el
-    
-    # 8. Cleanup
-    Set-Location -Path $env:USERPROFILE # Move out of Public before deleting
+    # 6. Cleanup
     Remove-Item -Path $FilePath -Force -ErrorAction SilentlyContinue
 
 } catch {
