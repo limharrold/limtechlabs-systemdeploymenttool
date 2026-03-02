@@ -25,22 +25,25 @@ $Header = @"
 
 Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
-Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
+Write-Host "Initializing Environment..." -ForegroundColor Gray
 Start-Sleep -Seconds 2
 
-# 3. Fetch and Execute Massgrave (The No-Fork Method)
+# 3. Fetch, Modify, and Execute
 try {
-    $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
+    $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
+    
+    # --- THE FIX: STRIP WINDOW MANAGEMENT ---
+    # We remove the lines that force a new window size or title
+    # This keeps the script trapped inside OUR window.
+    $MAS_CLEAN = $MAS_RAW -replace 'mode con.*', '' -replace 'title .*', '' -replace 'color .*', ''
     
     $TempFile = Join-Path $env:TEMP "LimTech_Engine.cmd"
-    Set-Content -Path $TempFile -Value $MAS
     
-    # --- THE FIX ---
-    # We set these variables so MAS thinks it already handled the window setup
-    $env:mas_window_setup = "1"
-    $env:params = "-el"
+    # We force the MAS script to skip its own elevation check
+    $FinalCode = "@set mas_window_setup=1`r`n@set params=-el`r`n" + $MAS_CLEAN
+    Set-Content -Path $TempFile -Value $FinalCode
     
-    # Run the script internally
+    # Execute internally
     & $env:ComSpec /c "`"$TempFile`" -el"
     
     # Cleanup
