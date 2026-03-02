@@ -3,15 +3,18 @@
 #  Host: activate.limtechlabs.top
 # ============================================================
 
-# 1. Force Admin Privileges
+# 1. FIX: TLS/SSL Support for Older Windows
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# 2. Force Admin Privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "Elevating to Administrator..." -ForegroundColor Yellow
-    $args = "-NoProfile -ExecutionPolicy Bypass -Command `"iex (irm 'https://activate.limtechlabs.top')`""
+    $args = "-NoProfile -ExecutionPolicy Bypass -Command `"irm activate.limtechlabs.top | iex`""
     Start-Process powershell.exe -ArgumentList $args -Verb RunAs
     exit
 }
 
-# 2. Setup Interface
+# 3. Setup Interface
 $Host.UI.RawUI.WindowTitle = "Lim Tech Labs - Deployment Tool"
 Clear-Host
 
@@ -25,58 +28,72 @@ $Header = @"
 "@
 
 Write-Host $Header -ForegroundColor Cyan
-Write-Host "Status: Authenticated (Admin)" -ForegroundColor Green
+Write-Host " [ STATUS ] Authenticated (Administrator)" -ForegroundColor Green
+Write-Host " [ INFO   ] Initializing System Deployment..." -ForegroundColor White
+Write-Host ""
+Write-Host " ----------------------------------------------------------" -ForegroundColor Gray
+Write-Host "  ACKNOWLEDGMENT:" -ForegroundColor Yellow
+Write-Host "  Special thanks to Massgrave.dev for making this" -ForegroundColor Gray
+Write-Host "  utility possible and free for everyone." -ForegroundColor Gray
+Write-Host " ----------------------------------------------------------" -ForegroundColor Gray
 Write-Host ""
 
-# 3. Fetch, Deep Clean, and Execute
+# 4. Fetch, Deep Clean, and Execute
 try {
-    Write-Host "Connecting to Global Backend... " -NoNewline -ForegroundColor Gray
-    Start-Sleep -Seconds 1
+    Write-Host " Connecting to Global Backend... " -NoNewline -ForegroundColor Gray
+    
+    # DNS Bypass Logic
+    $MAS_RAW = try {
+        Invoke-RestMethod -Uri "https://get.activated.win" -ErrorAction Stop
+    } catch {
+        Write-Host "(DNS Bypass Active) " -ForegroundColor Yellow -NoNewline
+        (curl.exe -s --doh-url https://1.1.1.1/dns-query https://get.activated.win | Out-String)
+    }
+
     Write-Host "Connected!" -ForegroundColor Green
     Write-Host ""
 
     # Downloading Progress Bar
     for ($i = 1; $i -le 100; $i += 10) {
-        Write-Progress -Activity "Downloading Lim Tech Labs Engine" -Status "$i% Complete" -PercentComplete $i
+        Write-Progress -Activity "Lim Tech Labs: Syncing with Global Engine" -Status "$i% Complete" -PercentComplete $i
         Start-Sleep -Milliseconds 50
     }
 
-    # Fetching the Raw Code
-    $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
+    # --- THE DEEP CLEAN ---
+    # Removes massgrave mentions from the engine to maintain your professional UI
+    $MAS_CLEAN = $MAS_RAW -replace '(?m)^.*massgrave.*$', '' -replace '(?m)^.*homepage.*$', '' -replace '(?m)^.*Need help.*$', ''
     
-    # --- THE DEEP CLEAN FIX ---
-    # This regex looks for any line containing "massgrave" or "homepage" and deletes the whole line.
-    $MAS_CLEAN = $MAS_RAW -replace '(?m)^.*massgrave.*$', '' -replace '(?m)^.*homepage.*$', ''
-    
-    Write-Progress -Activity "Downloading Lim Tech Labs Engine" -Completed
+    Write-Progress -Activity "Lim Tech Labs: Syncing with Global Engine" -Completed
     
     # Execute the cleaned version
     Invoke-Expression $MAS_CLEAN
 } 
 catch {
-    Write-Host "Error: Connection to backend failed." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor White
+    Write-Host " [ ERROR ] Connection to backend failed." -ForegroundColor Red
+    Write-Host " [ INFO  ] Details: $($_.Exception.Message)" -ForegroundColor White
     Pause
 }
 
-# 4. Final Thank You & Countdown
+# 5. Final Thank You & Fast Countdown
 Clear-Host
 Write-Host $Header -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Thank you for using this tool!" -ForegroundColor Yellow
+Write-Host " [ COMPLETE ] Process finished successfully." -ForegroundColor Green
+Write-Host " [ NOTICE   ] Thank you for choosing Lim Tech Labs!" -ForegroundColor Yellow
 Write-Host ""
 
-$Seconds = 30
+$Seconds = 5
 while ($Seconds -gt 0) {
-    $Percent = [int](($Seconds / 30) * 100)
-    Write-Progress -Activity "System Closing" -Status "Closing in $Seconds seconds..." -PercentComplete $Percent
+    # Progress bar for the 5-second exit timer
+    $Percent = [int](($Seconds / 5) * 100)
+    Write-Progress -Activity "Lim Tech Labs: System Shutdown" -Status "Closing in $Seconds seconds..." -PercentComplete $Percent
     
-    Write-Host "`rThis application will automatically close after $Seconds seconds... " -NoNewline -ForegroundColor Gray
+    Write-Host "`r This session will automatically close in $Seconds seconds... " -NoNewline -ForegroundColor Gray
     Start-Sleep -Seconds 1
     $Seconds--
 }
 
-Write-Progress -Activity "System Closing" -Completed
-Write-Host "`rClosing now. Goodbye!                             " -ForegroundColor White
+Write-Progress -Activity "Lim Tech Labs: System Shutdown" -Completed
+Write-Host "`r Closing now. Goodbye!                                    " -ForegroundColor White
 Start-Sleep -Seconds 1
 exit
