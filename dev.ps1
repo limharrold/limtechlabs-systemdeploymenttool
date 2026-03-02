@@ -28,37 +28,30 @@ Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
 Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
 Start-Sleep -Seconds 2
 
-# 3. Fetch, Strip, and Execute
+# 3. Fetch and Execute (Using the "Safe Injection" Method)
 try {
     $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # --- THE ULTIMATE FIX ---
-    # We find the part where Massgrave starts its window management and CUT IT OUT.
-    # We look for the ':main' label or the end of the elevation block.
-    
-    # We split the script into lines
-    $Lines = $MAS_RAW -split "`r`n"
-    $CleanLines = @()
-    $Skip = $true
-    
-    foreach ($Line in $Lines) {
-        # We search for the start of the actual Menu logic
-        if ($Line -like "*:mainmenu*" -or $Line -like "*:main*") { $Skip = $false }
-        if (-not $Skip) { $CleanLines += $Line }
-    }
-
     $TempFile = Join-Path $env:TEMP "LimTech_Engine.cmd"
     
-    # We manually add the required setup variables back in since we cut them out
-    $FinalCode = "@echo off`r`nset mas_window_setup=1`r`nset params=-el`r`n" + ($CleanLines -join "`r`n")
+    # We add the "Stop Window Spawning" variables to the very top of the file
+    $Prefix = "@echo off`r`nset mas_window_setup=1`r`nset params=-el`r`nset \"_args=-el\"`r`n"
+    $FinalCode = $Prefix + $MAS_RAW
+    
     Set-Content -Path $TempFile -Value $FinalCode
     
-    # Run the cleaned engine internally
+    # --- THE FIX ---
+    # We use 'cmd /c' to run it. If it crashes, it will return to PowerShell 
+    # where we have a 'Pause' waiting for you.
     & $env:ComSpec /c "`"$TempFile`" -el"
     
+    # Final Pause so you can see if there was an error message
+    Write-Host "`nLim Tech Labs: Process finished." -ForegroundColor Yellow
+    Read-Host "Press Enter to close this window"
+
     # Cleanup
     Remove-Item $TempFile -ErrorAction SilentlyContinue
 } catch {
     Write-Host "Error: Connection to backend failed." -ForegroundColor Red
-    Pause
+    Read-Host "Press Enter to exit"
 }
