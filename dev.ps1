@@ -1,19 +1,28 @@
 # ============================================================
-#  LIM TECH LABS - System Deployment & License Utility
+#  DEBUG MODE: LIM TECH LABS - System Deployment
 # ============================================================
 
-# 1. Force Admin Privileges (Fixed for Remote/URL Execution)
+Write-Host "DEBUG: Script Started..." -ForegroundColor Yellow
+
+# 1. Force Admin Privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Requesting Administrator privileges..." -ForegroundColor Yellow
+    Write-Host "DEBUG: Not Admin. Attempting to elevate..." -ForegroundColor Red
     
-    # This command tells the new Admin window to go back to your URL and run it again
+    # We use a slightly different elevation command to catch errors
     $RemoteCommand = "iex (irm 'https://activate.limtechlabs.top')"
-    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -Command $RemoteCommand" -Verb RunAs
+    try {
+        Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -Command $RemoteCommand" -Verb RunAs
+    } catch {
+        Write-Host "DEBUG: Elevation failed: $($_.Exception.Message)" -ForegroundColor Red
+        Read-Host "Press Enter to exit"
+    }
     exit
 }
 
+Write-Host "DEBUG: Admin Rights Confirmed!" -ForegroundColor Green
+
 # 2. Setup Interface
-$Host.UI.RawUI.WindowTitle = "Lim Tech Labs - Deployment Tool"
+$Host.UI.RawUI.WindowTitle = "Lim Tech Labs - Deployment Tool (Admin)"
 Clear-Host
 
 $Header = @"
@@ -26,19 +35,21 @@ $Header = @"
 "@
 
 Write-Host $Header -ForegroundColor Cyan
-Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
-Write-Host "Status: Authenticated (Admin)" -ForegroundColor Green
-Start-Sleep -Seconds 2
+Write-Host "DEBUG: Loading Interface... Press Enter to continue" -ForegroundColor Gray
+Read-Host # PAUSE 1
 
-# 3. Fetch and Execute Massgrave Engine
+# 3. Fetch and Execute Massgrave
 try {
-    Write-Host "Connecting to Global Backend..." -ForegroundColor Gray
+    Write-Host "DEBUG: Attempting to fetch Massgrave..." -ForegroundColor Gray
     $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
+    Write-Host "DEBUG: Fetch successful. Running Massgrave now..." -ForegroundColor Green
+    
+    # Run the engine
     Invoke-Expression $MAS
 } catch {
-    Write-Host "Connection failed. Please check internet access." -ForegroundColor Red
-    Pause
+    Write-Host "DEBUG: ERROR during fetch/exec: $($_.Exception.Message)" -ForegroundColor Red
+    Read-Host "Press Enter to see details before closing"
 }
 
-# 4. Open Portfolio (Only opens after MAS is closed)
-Write-Host "Task Complete" -ForegroundColor Cyan
+Write-Host "DEBUG: Script reached the end." -ForegroundColor Yellow
+Read-Host "Final Pause - Press Enter to Close Window"
