@@ -3,9 +3,8 @@
 #  Host: activate.limtechlabs.top
 # ============================================================
 
-# 1. Improved Admin Check & Stealth Elevation
+# 1. Stealth Elevation (Powershell Side)
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # Launch Admin version and kill the current non-admin one immediately
     $ArgList = "-NoProfile -ExecutionPolicy Bypass -Command `"iex (irm 'https://activate.limtechlabs.top')`""
     Start-Process powershell.exe -ArgumentList $ArgList -Verb RunAs
     exit 
@@ -26,21 +25,22 @@ $Header = @"
 
 Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
-Write-Host "Initializing Environment..." -ForegroundColor Gray
+Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
 Start-Sleep -Seconds 2
 
-# 3. Fetch and Execute Massgrave (Forcing it to stay in this window)
+# 3. Fetch and Execute Massgrave (Internal Force)
 try {
     $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # We save the script to a temporary file and run it via CMD /C
-    # This prevents it from opening a new separate window
+    # We save to a temp file
     $TempFile = Join-Path $env:TEMP "LimTech_Engine.cmd"
     Set-Content -Path $TempFile -Value $MAS
     
-    & $env:ComSpec /c $TempFile
+    # THE FIX: We add "-el" as an argument. 
+    # This tells the MAS script to skip its own window-spawning logic.
+    & $env:ComSpec /c "`"$TempFile`" -el"
     
-    # Cleanup after closing
+    # Cleanup
     Remove-Item $TempFile -ErrorAction SilentlyContinue
 } catch {
     Write-Host "Error: Connection to backend failed." -ForegroundColor Red
