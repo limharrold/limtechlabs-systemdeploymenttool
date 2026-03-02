@@ -1,13 +1,12 @@
 # ============================================================
-#  LIM TECH LABS - System Utility (Stable Build)
-#  Host: activate.limtechlabs.top
+#  LIM TECH LABS - System Utility
+#  Command: irm activate.limtechlabs.top | iex
 # ============================================================
 
-# 1. Force Admin Privileges
+# 1. Auto-Elevate using your exact command
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Elevating to Admin..." -ForegroundColor Yellow
-    $RemoteCmd = "iex (irm 'https://activate.limtechlabs.top')"
-    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -Command $RemoteCmd" -Verb RunAs
+    Write-Host "Requesting Administrator privileges..." -ForegroundColor Yellow
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm activate.limtechlabs.top | iex`"" -Verb RunAs
     exit
 }
 
@@ -24,29 +23,34 @@ $Header = @"
 "@
 Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
-Write-Host "Initializing Backend... Please wait." -ForegroundColor Gray
+Write-Host "Initializing Backend... Please wait.`n" -ForegroundColor Gray
 
-# 3. The Execution Fix
 try {
-    # Fetch the code
+    # 3. Download the MAS code
     $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # FIX: Save to Public folder to completely avoid spaces in the path
+    # 4. Save to Public folder (Zero spaces, zero system folder blocks)
     $FilePath = "$env:PUBLIC\LimTech_Engine.cmd"
-    Set-Content -Path $FilePath -Value $MAS
+    [System.IO.File]::WriteAllText($FilePath, $MAS)
     
-    # Inject variables to bypass MAS self-elevation and window management
+    # 5. FIX: Change working directory. 
+    # System32 blocks temporary files. We move to the Public folder first.
+    Set-Location -Path $env:PUBLIC
+
+    # 6. Inject Bypass Variables so MAS stays in this window
     $env:mas_window_setup = "1"
     $env:params = "-el"
-    $env:_args = "-el"
+    
+    # 7. FIX: Execute natively. 
+    # By just calling the file directly with '&', PowerShell perfectly translates 
+    # the path to CMD without breaking the quotes.
+    & $FilePath -el
+    
+    # 8. Cleanup
+    Set-Location -Path $env:USERPROFILE # Move out of Public before deleting
+    Remove-Item -Path $FilePath -Force -ErrorAction SilentlyContinue
 
-    # FIX: Use Start-Process with -NoNewWindow to safely parse paths and lock the UI
-    Start-Process -FilePath "$env:ComSpec" -ArgumentList "/c `"`"$FilePath`" -el`"" -NoNewWindow -Wait
-
-    # Cleanup after you close the menu
-    if (Test-Path $FilePath) { Remove-Item $FilePath -Force }
-}
-catch {
+} catch {
     Write-Host "Fatal Error: $($_.Exception.Message)" -ForegroundColor Red
     Pause
 }
