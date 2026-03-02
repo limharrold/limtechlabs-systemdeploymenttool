@@ -28,7 +28,7 @@ Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Admin)" -ForegroundColor Green
 Write-Host ""
 
-# 3. Fetch, Clean, and Execute
+# 3. Fetch, Deep Clean, and Execute
 try {
     Write-Host "Connecting to Global Backend... " -NoNewline -ForegroundColor Gray
     Start-Sleep -Seconds 1
@@ -44,8 +44,9 @@ try {
     # Fetching the Raw Code
     $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # REMOVE THE LINK: This replaces the massgrave homepage text with empty space
-    $MAS_CLEAN = $MAS_RAW -replace 'Need help\? Check our homepage: https://massgrave.dev', ''
+    # --- THE DEEP CLEAN FIX ---
+    # This regex looks for any line containing "massgrave" or "homepage" and deletes the whole line.
+    $MAS_CLEAN = $MAS_RAW -replace '(?m)^.*massgrave.*$', '' -replace '(?m)^.*homepage.*$', ''
     
     Write-Progress -Activity "Downloading Lim Tech Labs Engine" -Completed
     
@@ -67,7 +68,6 @@ Write-Host ""
 
 $Seconds = 30
 while ($Seconds -gt 0) {
-    # Progress bar for the 30-second exit timer
     $Percent = [int](($Seconds / 30) * 100)
     Write-Progress -Activity "System Closing" -Status "Closing in $Seconds seconds..." -PercentComplete $Percent
     
