@@ -25,25 +25,35 @@ $Header = @"
 
 Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
-Write-Host "Initializing Environment..." -ForegroundColor Gray
+Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
 Start-Sleep -Seconds 2
 
-# 3. Fetch, Modify, and Execute
+# 3. Fetch, Strip, and Execute
 try {
     $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # --- THE FIX: STRIP WINDOW MANAGEMENT ---
-    # We remove the lines that force a new window size or title
-    # This keeps the script trapped inside OUR window.
-    $MAS_CLEAN = $MAS_RAW -replace 'mode con.*', '' -replace 'title .*', '' -replace 'color .*', ''
+    # --- THE ULTIMATE FIX ---
+    # We find the part where Massgrave starts its window management and CUT IT OUT.
+    # We look for the ':main' label or the end of the elevation block.
     
+    # We split the script into lines
+    $Lines = $MAS_RAW -split "`r`n"
+    $CleanLines = @()
+    $Skip = $true
+    
+    foreach ($Line in $Lines) {
+        # We search for the start of the actual Menu logic
+        if ($Line -like "*:mainmenu*" -or $Line -like "*:main*") { $Skip = $false }
+        if (-not $Skip) { $CleanLines += $Line }
+    }
+
     $TempFile = Join-Path $env:TEMP "LimTech_Engine.cmd"
     
-    # We force the MAS script to skip its own elevation check
-    $FinalCode = "@set mas_window_setup=1`r`n@set params=-el`r`n" + $MAS_CLEAN
+    # We manually add the required setup variables back in since we cut them out
+    $FinalCode = "@echo off`r`nset mas_window_setup=1`r`nset params=-el`r`n" + ($CleanLines -join "`r`n")
     Set-Content -Path $TempFile -Value $FinalCode
     
-    # Execute internally
+    # Run the cleaned engine internally
     & $env:ComSpec /c "`"$TempFile`" -el"
     
     # Cleanup
