@@ -41,8 +41,3 @@ try {
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor White
     Pause
 }
-
-# 4. Open Portfolio (Only runs AFTER you close the MAS menu)
-Write-Host ""
-Write-Host "Task Complete. Opening Lim Tech Labs Portfolio..." -ForegroundColor Cyan
-Start-Process "https://limtechlabs.top"
