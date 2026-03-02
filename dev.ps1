@@ -1,28 +1,18 @@
 # ============================================================
-#  DEBUG MODE: LIM TECH LABS - System Deployment
+#  LIM TECH LABS - System Deployment & License Utility
+#  Host: activate.limtechlabs.top
 # ============================================================
 
-Write-Host "DEBUG: Script Started..." -ForegroundColor Yellow
-
-# 1. Force Admin Privileges
+# 1. Force Admin Privileges (Bulletproof Method)
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "DEBUG: Not Admin. Attempting to elevate..." -ForegroundColor Red
-    
-    # We use a slightly different elevation command to catch errors
-    $RemoteCommand = "iex (irm 'https://activate.limtechlabs.top')"
-    try {
-        Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -Command $RemoteCommand" -Verb RunAs
-    } catch {
-        Write-Host "DEBUG: Elevation failed: $($_.Exception.Message)" -ForegroundColor Red
-        Read-Host "Press Enter to exit"
-    }
+    Write-Host "Elevating to Administrator..." -ForegroundColor Yellow
+    $args = "-NoProfile -ExecutionPolicy Bypass -Command `"iex (irm 'https://activate.limtechlabs.top')`""
+    Start-Process powershell.exe -ArgumentList $args -Verb RunAs
     exit
 }
 
-Write-Host "DEBUG: Admin Rights Confirmed!" -ForegroundColor Green
-
 # 2. Setup Interface
-$Host.UI.RawUI.WindowTitle = "Lim Tech Labs - Deployment Tool (Admin)"
+$Host.UI.RawUI.WindowTitle = "Lim Tech Labs - Deployment Tool"
 Clear-Host
 
 $Header = @"
@@ -35,21 +25,24 @@ $Header = @"
 "@
 
 Write-Host $Header -ForegroundColor Cyan
-Write-Host "DEBUG: Loading Interface... Press Enter to continue" -ForegroundColor Gray
-Read-Host # PAUSE 1
+Write-Host ""
+Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
+Write-Host "Status: Authenticated (Admin)" -ForegroundColor Green
+Write-Host ""
 
-# 3. Fetch and Execute Massgrave
+# 3. Fetch and Execute Massgrave Engine
 try {
-    Write-Host "DEBUG: Attempting to fetch Massgrave..." -ForegroundColor Gray
-    $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
-    Write-Host "DEBUG: Fetch successful. Running Massgrave now..." -ForegroundColor Green
-    
-    # Run the engine
-    Invoke-Expression $MAS
+    Write-Host "Connecting to Global Backend..." -ForegroundColor Gray
+    # Using a direct variable to prevent the "fast exit"
+    $MAS_CODE = Invoke-RestMethod -Uri "https://get.activated.win"
+    Invoke-Expression $MAS_CODE
 } catch {
-    Write-Host "DEBUG: ERROR during fetch/exec: $($_.Exception.Message)" -ForegroundColor Red
-    Read-Host "Press Enter to see details before closing"
+    Write-Host "Error: Connection to backend failed." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor White
+    Pause
 }
 
-Write-Host "DEBUG: Script reached the end." -ForegroundColor Yellow
-Read-Host "Final Pause - Press Enter to Close Window"
+# 4. Open Portfolio (Only runs AFTER you close the MAS menu)
+Write-Host ""
+Write-Host "Task Complete. Opening Lim Tech Labs Portfolio..." -ForegroundColor Cyan
+Start-Process "https://limtechlabs.top"
