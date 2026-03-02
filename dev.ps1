@@ -3,7 +3,7 @@
 #  Host: activate.limtechlabs.top
 # ============================================================
 
-# 1. Stealth Elevation (Powershell Side)
+# 1. Stealth Elevation
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $ArgList = "-NoProfile -ExecutionPolicy Bypass -Command `"iex (irm 'https://activate.limtechlabs.top')`""
     Start-Process powershell.exe -ArgumentList $ArgList -Verb RunAs
@@ -28,16 +28,19 @@ Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
 Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
 Start-Sleep -Seconds 2
 
-# 3. Fetch and Execute Massgrave (Internal Force)
+# 3. Fetch and Execute Massgrave (The No-Fork Method)
 try {
     $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    # We save to a temp file
     $TempFile = Join-Path $env:TEMP "LimTech_Engine.cmd"
     Set-Content -Path $TempFile -Value $MAS
     
-    # THE FIX: We add "-el" as an argument. 
-    # This tells the MAS script to skip its own window-spawning logic.
+    # --- THE FIX ---
+    # We set these variables so MAS thinks it already handled the window setup
+    $env:mas_window_setup = "1"
+    $env:params = "-el"
+    
+    # Run the script internally
     & $env:ComSpec /c "`"$TempFile`" -el"
     
     # Cleanup
