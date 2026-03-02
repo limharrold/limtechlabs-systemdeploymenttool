@@ -1,7 +1,6 @@
 # ============================================================
 #  LIM TECH LABS - System Deployment & License Utility
 #  Host: activate.limtechlabs.top
-#  Architecture: Harrold Gawad Lim
 # ============================================================
 
 # 1. CACHE BUSTER & ELEVATION
@@ -100,3 +99,4 @@ Write-Progress -Activity "Lim Tech Labs: System Shutdown" -Completed
 Write-Host "`r Closing now. Goodbye!                                    " -ForegroundColor White
 Start-Sleep -Seconds 1
 exit
+
