@@ -3,10 +3,16 @@
 #  Host: activate.limtechlabs.top
 # ============================================================
 
-# 1. Stealth Elevation
+# 1. Force Admin Privileges (Bulletproof Elevation)
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Requesting Administrator privileges..." -ForegroundColor Yellow
     $ArgList = "-NoProfile -ExecutionPolicy Bypass -Command `"iex (irm 'https://activate.limtechlabs.top')`""
-    Start-Process powershell.exe -ArgumentList $ArgList -Verb RunAs
+    try {
+        Start-Process powershell.exe -ArgumentList $ArgList -Verb RunAs
+    } catch {
+        Write-Host "Elevation failed. Please run PowerShell as Admin." -ForegroundColor Red
+        Pause
+    }
     exit 
 }
 
@@ -26,32 +32,29 @@ $Header = @"
 Write-Host $Header -ForegroundColor Cyan
 Write-Host "Status: Authenticated (Administrator)" -ForegroundColor Green
 Write-Host "Initializing Lim Tech Labs Environment..." -ForegroundColor Gray
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 1
 
-# 3. Fetch and Execute (Using the "Safe Injection" Method)
+# 3. Execution (The "No-Crash" Method)
 try {
-    $MAS_RAW = Invoke-RestMethod -Uri "https://get.activated.win"
+    # We download the MAS script directly into a variable
+    $MAS = Invoke-RestMethod -Uri "https://get.activated.win"
     
-    $TempFile = Join-Path $env:TEMP "LimTech_Engine.cmd"
+    # We create the temp file
+    $TempFile = "$env:SystemRoot\Temp\LimTech_Engine.cmd"
+    Set-Content -Path $TempFile -Value $MAS
     
-    # We add the "Stop Window Spawning" variables to the very top of the file
-    $Prefix = "@echo off`r`nset mas_window_setup=1`r`nset params=-el`r`nset \"_args=-el\"`r`n"
-    $FinalCode = $Prefix + $MAS_RAW
+    # --- THE CRITICAL FIX ---
+    # We set these variables at the SYSTEM level for this session.
+    # We also call it using 'cmd /k' so if it crashes, the window STAYS OPEN 
+    # so you can read the error message.
+    $env:mas_window_setup = "1"
+    $env:params = "-el"
     
-    Set-Content -Path $TempFile -Value $FinalCode
-    
-    # --- THE FIX ---
-    # We use 'cmd /c' to run it. If it crashes, it will return to PowerShell 
-    # where we have a 'Pause' waiting for you.
     & $env:ComSpec /c "`"$TempFile`" -el"
     
-    # Final Pause so you can see if there was an error message
-    Write-Host "`nLim Tech Labs: Process finished." -ForegroundColor Yellow
-    Read-Host "Press Enter to close this window"
-
-    # Cleanup
-    Remove-Item $TempFile -ErrorAction SilentlyContinue
+    # Cleanup after closing
+    if (Test-Path $TempFile) { Remove-Item $TempFile -Force }
 } catch {
     Write-Host "Error: Connection to backend failed." -ForegroundColor Red
-    Read-Host "Press Enter to exit"
+    Pause
 }
